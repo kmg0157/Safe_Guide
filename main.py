@@ -1,8 +1,13 @@
 from client import FlaskClient
 
 def main():
-    Client=FlaskClient()
-    Client.run()
+    client = FlaskClient()
+    try:
+        client.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        client.close()
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
