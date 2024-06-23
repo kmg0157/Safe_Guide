@@ -1,32 +1,26 @@
-from flask import Flask
+from flask import Flask, request
 import os
-from db_manage import ImageDatabase
-from route import receive_file, update_status, get_images
+from werkzeug.utils import secure_filename
 
-class FlaskClient:
+class FileReceiver:
     def __init__(self, receive_folder='received_files'):
         self.app = Flask(__name__)
         self.RECEIVE_FOLDER = receive_folder
         os.makedirs(self.RECEIVE_FOLDER, exist_ok=True)
-        self.db = ImageDatabase()
         self._set_routes()
 
     def _set_routes(self):
-        receive_file(self.app, self.db)
-        update_status(self.app, self.db)
-        get_images(self.app, self.db)
+        @self.app.route('/receive', methods=['POST'])
+        def receive_file():
+            if 'file' not in request.files:
+                return 'No file part', 400
+            file = request.files['file']
+            if file.filename == '':
+                return 'No selected file', 400
+            file_path = os.path.join(self.RECEIVE_FOLDER, secure_filename(file.filename))
+            file.save(file_path)
+            return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port)
 
-    def close(self):
-        self.db.close_db()
-
-if __name__ == '__main__':
-    client = FlaskClient()
-    try:
-        client.run()
-    except KeyboardInterrupt:
-        pass
-    finally:
-        client.close()

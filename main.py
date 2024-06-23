@@ -1,13 +1,12 @@
-from client import FlaskClient
+from client import FileReceiver
 
 def main():
-    client = FlaskClient()
+    client = FileReceiver()
     try:
         client.run()
+        client._set_routes()
     except KeyboardInterrupt:
         pass
-    finally:
-        client.close()
 
 if __name__ == '__main__':
     main()
