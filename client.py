@@ -1,12 +1,14 @@
 from flask import Flask, request
 import os
 from werkzeug.utils import secure_filename
+from db_manage import ImageDatabase
 
 class FileReceiver:
     def __init__(self, receive_folder='received_files'):
         self.app = Flask(__name__)
         self.RECEIVE_FOLDER = receive_folder
         os.makedirs(self.RECEIVE_FOLDER, exist_ok=True)
+        self.db=ImageDatabase()
         self._set_routes()
 
     def _set_routes(self):
@@ -14,11 +16,22 @@ class FileReceiver:
         def receive_file():
             if 'file' not in request.files:
                 return 'No file part', 400
+            
             file = request.files['file']
+            
             if file.filename == '':
                 return 'No selected file', 400
-            file_path = os.path.join(self.RECEIVE_FOLDER, secure_filename(file.filename))
+            
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(self.RECEIVE_FOLDER, filename)
             file.save(file_path)
+
+            #read BLOB type
+            with open(file_path, 'rb') as image_file:
+                image_bytes=image_file.read()
+            
+            self.db.save_image(image_bytes,filename, status=0)
+
             return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
