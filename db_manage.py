@@ -7,25 +7,22 @@ from client import FileReceiver
 
 class ImageDatabase:
     def __init__(self):
-        # 데이터베이스 연결
         self.conn = sqlite3.connect('image_database.db', check_same_thread=False)
-        # 커서 객체 생성
         self.cur = self.conn.cursor()
         self.create_table()
         self.image_data=FileReceiver()
 
     def create_table(self):
-        # 테이블 생성 SQL
         create_table_query = '''
         CREATE TABLE IF NOT EXISTS images (
             timestamp INTEGER NOT NULL,
-            dimensions TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            image_blob BLOB NOT NULL,
+            filename BLOB NOT NULL,
+            height INT NOT NULL,
+            width INT NOT NULL,
+            channel INT NOT NULL,
             status INTEGER NOT NULL
         )
         '''
-        # 테이블 생성 실행
         self.cur.execute(create_table_query)
         self.conn.commit()
 
@@ -55,6 +52,5 @@ class ImageDatabase:
 
 
     def close_db(self):
-        # 커서와 연결 종료
         self.cur.close()
         self.conn.close()
