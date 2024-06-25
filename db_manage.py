@@ -1,5 +1,5 @@
 import sqlite3
-import base64
+import numpy as np
 from datetime import datetime
 from PIL import Image
 import io
@@ -27,13 +27,13 @@ class ImageDatabase:
         self.cur.execute(create_table_query)
         self.conn.commit()
 
-    #수정필요
-    def save_image(self, image_bytes, status):
+    
+    def save_image(self, image_bytes, filename, status):
         # 이미지 바이트로부터 이미지 객체 생성
         img = Image.open(io.BytesIO(image_bytes))
         
-        width, height=img.size
-        channel=len(img.getbands())
+        img_array=np.array(img)
+        height, width,channel = img_array.shape
 
         
         # 현재 시간 (밀리초 단위)
@@ -46,7 +46,7 @@ class ImageDatabase:
         '''
         
         # 데이터 삽입
-        self.cur.execute(insert_data_query, (timestamp, width, height, channel, status))
+        self.cur.execute(insert_data_query, (timestamp, filename, width, height, channel, status))
         self.conn.commit()
 
 
