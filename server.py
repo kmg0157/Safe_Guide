@@ -6,9 +6,9 @@ import requests
 class FlaskServer:
     def __init__(self):
         self.app = Flask(__name__)
-        self.UPLOAD_FOLDER = 'C:/Users/NetDB/mingu/Safe_Guide/uploads'
+        self.UPLOAD_FOLDER = 'C:/Users/kmg01/smart/uploads'
         self.ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
-        self.JETSON_IP = '192.168.0.9'  # 젯슨 나노의 IP 주소
+        self.JETSON_IP = '192.168.1.42'  # 젯슨 나노의 IP 주소
         self.JETSON_PORT = 5000  # 젯슨 나노의 포트 번호
         self.JETSON_URL = f'http://{self.JETSON_IP}:{self.JETSON_PORT}/receive'
         self.app.config['UPLOAD_FOLDER'] = self.UPLOAD_FOLDER
