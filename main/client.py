@@ -5,11 +5,11 @@ from db_manage import ImageDatabase
 
 class FileReceiver:
     def __init__(self, receive_folder='received_files'):
-        self.app = Flask(__name__)
+        self.app = Flask(__name__) #Initializing app
         self.RECEIVE_FOLDER = receive_folder
         os.makedirs(self.RECEIVE_FOLDER, exist_ok=True)
-        self.db = ImageDatabase()  # 여기서 ImageDatabase를 생성합니다.
-        self._set_routes()
+        self.db = ImageDatabase()  # Create ImageDatabase
+        self._set_routes() # Setting Flask Route
 
     def _set_routes(self):
         @self.app.route('/receive', methods=['POST'])
@@ -30,7 +30,7 @@ class FileReceiver:
             with open(file_path, 'rb') as image_file:
                 image_bytes = image_file.read()
             
-            self.db.save_image(image_bytes, status=0)
+            self.db.save_image(image_bytes, status=0) # save images in DB
 
             return 'File received successfully', 200
 
