@@ -15,11 +15,11 @@ class ImageDatabase:
         CREATE TABLE IF NOT EXISTS images (
             Sequence INTEGER PRIMARY KEY AUTOINCREMENT,
             Timestamp INTEGER NOT NULL,
-            Filename TEXT NOT NULL,
             Height INTEGER NOT NULL,
             Width INTEGER NOT NULL,
             Channel INTEGER NOT NULL,
-            Status INTEGER NOT NULL
+            Status INTEGER NOT NULL,
+            ImageData BLOB NOT NULL
         )
         '''
         self.cur.execute(create_table_query)
@@ -37,12 +37,12 @@ class ImageDatabase:
         
         # 데이터 삽입 SQL
         insert_data_query = '''
-        INSERT INTO images (Timestamp, Filename, Height, Width, Channel, Status)
+        INSERT INTO images (Timestamp, Height, Width, Channel, Status, ImageData)
         VALUES (?, ?, ?, ?, ?, ?)
         '''
         
         # 데이터 삽입
-        self.cur.execute(insert_data_query, (timestamp, filename, height, width, channel, status))
+        self.cur.execute(insert_data_query, (timestamp, height, width, channel, status, sqlite3.Binary(image_bytes)))
         self.conn.commit()
 
     def close_db(self):

@@ -30,7 +30,7 @@ class FileReceiver:
             with open(file_path, 'rb') as image_file:
                 image_bytes = image_file.read()
             
-            self.db.save_image(image_bytes, filename, status=0)
+            self.db.save_image(image_bytes, status=0)
 
             return 'File received successfully', 200
 

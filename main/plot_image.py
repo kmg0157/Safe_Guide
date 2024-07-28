@@ -4,7 +4,7 @@ import io
 
 class FileOpener:
     def __init__(self):
-        self.conn=sqlite3.connect('image_database.py')
+        self.conn=sqlite3.connect('image_database.db')
         self.cur=self.conn.cursor()
 
     def file_open(self):
