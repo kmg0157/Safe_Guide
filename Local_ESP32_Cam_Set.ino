@@ -58,7 +58,7 @@
 //와이파이 설정 필요 & 서버 주소
 const char *ssid = "NetDB_408";
 const char *password = "netdb3230";
-const char *post_url = "http://10.255.77.133:81/imageUp"; // Location where images are POSTED
+const char *post_url = "http://192.168.1.47:81/imageUp"; // Location where images are POSTED
 // const char *post_url = "http://<<<<<<<<<<your-deployment>>>>>>>>>>>.herokuapp.com/upload-image"; // Location where images are POSTED
 
 //======================================== Variables for Timer/Millis.
