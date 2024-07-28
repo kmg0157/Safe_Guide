@@ -25,7 +25,7 @@ class ImageDatabase:
         self.cur.execute(create_table_query)
         self.conn.commit()
     
-    def save_image(self, image_bytes, filename, status):
+    def save_image(self, image_bytes, status):
         # 이미지 바이트로부터 이미지 객체 생성
         img = Image.open(io.BytesIO(image_bytes))
         
