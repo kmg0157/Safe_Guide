@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import sqlite3
 import io
+from PIL import Image
 
 class FileOpener:
     def __init__(self):
@@ -8,7 +9,7 @@ class FileOpener:
         self.cur=self.conn.cursor()
 
     def file_open(self):
-        self.cur.execute("SELECT Filename, Height, Width, Channel FROM images ORDER BY Sequence DESC LIMIT 1;")
+        self.cur.execute("SELECT ImageData, Height, Width, Channel FROM images ORDER BY Sequence DESC LIMIT 1;")
         row=self.cur.fetchone()
         image_blob=row[0]
         h=row[1]
@@ -16,7 +17,7 @@ class FileOpener:
         c=row[3]
 
         image_stream=io.BytesIO(image_blob)
-        image=plt.imread(image_stream)
+        image=Image.open(image_stream)
 
         plt.imshow(image)
         plt.title(f"Image (Height:{h}, Width:{w}, Channel:{c})")
