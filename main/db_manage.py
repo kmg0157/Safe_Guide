@@ -32,7 +32,7 @@ class ImageDatabase:
         img_array = np.array(img)
         height, width, channel = img_array.shape
 
-        # 현재 시간 (밀리초 단위)
+        # time
         timestamp = int(datetime.now().timestamp() * 1000)
         
         # 데이터 삽입 SQL
