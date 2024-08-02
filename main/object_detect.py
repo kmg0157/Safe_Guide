@@ -4,7 +4,7 @@ import cv2
 class ObjectDetection:
     def __init__(self):
         # YOLOv5 모델 로드
-        self.model = torch.hub.load('ultralytics/yolov5', 'custom', path='best_0.3.0.pt', source='local')
+        self.model = torch.hub.load('/home/jetson/smart/main/yolov5', 'custom', path='/home/jetson/smart/main/best_0.3.0.pt', source='local')
 
         # 추적 대상 클래스
         # 대상 클래스, 프레임 당 비율 변화, 화재/연기 감지 프레임, 관심/경고/위험 이미지 비율 모두 여기서 조정 가능
@@ -71,7 +71,7 @@ class ObjectDetection:
         if class_name not in self.tracked_objects:
             self.tracked_objects[class_name] = {
                 'area_ratios': [],
-                'alert_level': '관심',
+                'alert_level': 'Caution',
                 'frames_since_first_detection': 0
             }
 
@@ -80,20 +80,20 @@ class ObjectDetection:
         self.tracked_objects[class_name]['frames_since_first_detection'] += 1
 
         # 관심, 경고, 위험 수준 결정
-        if self.tracked_objects[class_name]['alert_level'] == '관심':
+        if self.tracked_objects[class_name]['alert_level'] == 'Caution':
             if len(self.tracked_objects[class_name]['area_ratios']) >= self.frame_check_threshold:
                 # 최근 n개의 프레임에서의 비율 변화 체크
                 recent_ratios = self.tracked_objects[class_name]['area_ratios'][-self.frame_check_threshold:]
                 ratio_change = recent_ratios[-1] - recent_ratios[0]
 
                 if ratio_change >= self.warning_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = '위험'
-                    print(f"[위험] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+                    self.tracked_objects[class_name]['alert_level'] = 'Danger'
+                    print(f"[Danger] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
                 elif ratio_change >= self.danger_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = '경고'
-                    print(f"[경고] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+                    self.tracked_objects[class_name]['alert_level'] = 'Warning'
+                    print(f"[Warning] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
 
         # Fire와 Smoke 클래스는 지정 프레임 횟수가 지나도 감지되면 경고
         if class_name in ['fire', 'smoke']:
             if self.tracked_objects[class_name]['frames_since_first_detection'] > self.fire_smoke_frame_check_threshold:
-                print(f"[경고] {class_name} detected for more than {self.fire_smoke_frame_check_threshold} frames")
+                print(f"[Caution] {class_name} detected for more than {self.fire_smoke_frame_check_threshold} frames")
