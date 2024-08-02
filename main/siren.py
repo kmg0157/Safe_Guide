@@ -7,19 +7,33 @@ class Siren:
         GPIO.setmode(GPIO.BOARD)
         GPIO.setup(self.BUZZER, GPIO.OUT)
 
-    def start_notice(self,order):
+
+    def default(self):
+        GPIO.output(self.BUZZER, GPIO.LOW)
+
+
+    def danger_notice(self):
         try:
             while True:
                 GPIO.output(self.BUZZER, GPIO.HIGH)
-                time.sleep(3)
+                time.sleep(1)
+                GPIO.output(self.BUZZER, GPIO.LOW)
+                time.sleep(1)
+
+        finally:
+            GPIO.cleanup()
+
+    def warning_notice(self):
+        try:
+            while True:
+                GPIO.output(self.BUZZER, GPIO.HIGH)
+                time.sleep(1)
                 GPIO.output(self.BUZZER, GPIO.LOW)
                 time.sleep(0.5)
 
-                # Check for user input
-                if order == 'END':
-                    break
         finally:
             GPIO.cleanup()
+
 
 def main():
     s = Siren()

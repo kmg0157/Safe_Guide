@@ -2,6 +2,7 @@ import torch
 import cv2
 import numpy as np
 import os
+from siren import Siren
 
 class ObjectDetection:
     def __init__(self):
@@ -20,6 +21,7 @@ class ObjectDetection:
 
         # 경고 상태 관리
         self.tracked_objects = {}
+        self.alert=Siren()
 
 
     # 바운딩 박스를 그리는 함수
@@ -97,12 +99,20 @@ class ObjectDetection:
 
                 if ratio_change >= self.warning_ratio:
                     self.tracked_objects[class_name]['alert_level'] = 'Danger'
+                    self.alert.danger_notice()
                     print(f"[Danger] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+                
                 elif ratio_change >= self.danger_ratio:
                     self.tracked_objects[class_name]['alert_level'] = 'Warning'
+                    self.alert.warning_notice()
                     print(f"[Warning] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+
+                else:
+                    self.alert.default()
 
         # Fire와 Smoke 클래스는 지정 프레임 횟수가 지나도 감지되면 경고
         if class_name in ['fire', 'smoke']:
             if self.tracked_objects[class_name]['frames_since_first_detection'] > self.fire_smoke_frame_check_threshold:
+                self.alert.warning_notice()
                 print(f"[Caution] {class_name} detected for more than {self.fire_smoke_frame_check_threshold} frames")
+                
