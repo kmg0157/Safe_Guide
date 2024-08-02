@@ -2,6 +2,7 @@ from flask import Flask, request
 import os
 from werkzeug.utils import secure_filename
 from db_manage import ImageDatabase
+from object_detect import ObjectDetection
 
 class FileReceiver:
     def __init__(self, receive_folder='received_files'):
@@ -10,6 +11,7 @@ class FileReceiver:
         os.makedirs(self.RECEIVE_FOLDER, exist_ok=True)
         self.db = ImageDatabase()  # Create ImageDatabase
         self._set_routes() # Setting Flask Route
+        self.detector=ObjectDetection() #Image detector
 
     def _set_routes(self):
         @self.app.route('/receive', methods=['POST'])
@@ -31,12 +33,8 @@ class FileReceiver:
                 image_bytes = image_file.read()
             
             self.db.save_image(image_bytes, status=0) # save images in DB
-
+            self.detector(image_bytes) # detecting image
             return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port, threaded=True)
-
-if __name__ == "__main__":
-    receiver = FileReceiver()
-    receiver.run()
