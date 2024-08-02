@@ -2,12 +2,12 @@ import torch
 import cv2
 import numpy as np
 import os
-from siren import Siren
+from main.siren import Siren
 
 class ObjectDetection:
     def __init__(self):
         # YOLOv5 모델 로드
-        self.model = torch.hub.load('/home/jetson/smart/main/yolov5', 'custom', path='/home/jetson/smart/main/best_0.3.0.pt', source='local')
+        self.model = torch.hub.load('/home/jetson/smart/Object_detection/yolov5', 'custom', path='/home/jetson/smart/Object_detection/best_0.3.0.pt', source='local')
 
         # 추적 대상 클래스
         # 대상 클래스, 프레임 당 비율 변화, 화재/연기 감지 프레임, 관심/경고/위험 이미지 비율 모두 여기서 조정 가능

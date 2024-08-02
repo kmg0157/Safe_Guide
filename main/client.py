@@ -2,7 +2,7 @@ from flask import Flask, request
 import os
 from werkzeug.utils import secure_filename
 from db_manage import ImageDatabase
-from object_detect import ObjectDetection
+from Object_detection.object_detect import ObjectDetection
 
 class FileReceiver:
     def __init__(self, receive_folder='received_files'):
