@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import os
 from main.siren import Siren
+from to_arduino.control_led import ControlLED
 
 class ObjectDetection:
     def __init__(self):
@@ -22,6 +23,7 @@ class ObjectDetection:
         # 경고 상태 관리
         self.tracked_objects = {}
         self.alert=Siren()
+        self.cl=ControlLED()
 
 
     # 바운딩 박스를 그리는 함수
@@ -100,15 +102,18 @@ class ObjectDetection:
                 if ratio_change >= self.warning_ratio:
                     self.tracked_objects[class_name]['alert_level'] = 'Danger'
                     self.alert.danger_notice()
+                    self.cl.request_on()
                     print(f"[Danger] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
                 
                 elif ratio_change >= self.danger_ratio:
                     self.tracked_objects[class_name]['alert_level'] = 'Warning'
                     self.alert.warning_notice()
+                    self.cl.request_on()
                     print(f"[Warning] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
 
                 else:
                     self.alert.default()
+                    self.cl.request_off()
 
         # Fire와 Smoke 클래스는 지정 프레임 횟수가 지나도 감지되면 경고
         if class_name in ['fire', 'smoke']:
