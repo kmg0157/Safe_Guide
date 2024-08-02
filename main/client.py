@@ -33,7 +33,7 @@ class FileReceiver:
                 image_bytes = image_file.read()
             
             self.db.save_image(image_bytes, status=0) # save images in DB
-            self.detector(image_bytes) # detecting image
+            self.detector.process_image(image_bytes) # detecting image
             return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
