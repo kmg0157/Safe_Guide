@@ -34,10 +34,3 @@ class Siren:
         finally:
             GPIO.cleanup()
 
-
-def main():
-    s = Siren()
-    s.start_notice()
-
-if __name__ == "__main__":
-    main()
