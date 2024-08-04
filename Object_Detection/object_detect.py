@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import os,sys
 sys.path.append('/home/jetson/smart/main')
-sys.path.append('/home/jetson/smart/send_to_led')
+#sys.path.append('/home/jetson/smart/send_to_led')
 from siren import Siren
 #from control_led import ControlLED
 
@@ -77,10 +77,9 @@ class ObjectDetection:
                     # 관심 수준 이상 감지
                     if area_ratio >= self.alert_threshold:
                         self.track_object(class_name, area_ratio)
-
-        output_path = os.path.join('/home/jetson/smart/output', 'processed_image.jpg')
-        cv2.imwrite(output_path, img)
-        print(f"Processed image saved to {output_path}")
+                        output_path = os.path.join('/home/jetson/smart/output', 'processed_image.jpg')
+                        cv2.imwrite(output_path, img)
+                        print(f"Processed image saved to {output_path}")
 
     # 객체의 상태를 기록 및 추적
     def track_object(self, class_name, area_ratio):

@@ -1,39 +1,41 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+import os
 
-# 서비스 계정 키 파일 경로
-SERVICE_ACCOUNT_FILE = '/home/jetson/smart/main/client_secret_809894108288-9os580gd8pgf37g22e807thllc6ts6d2.apps.googleusercontent.com.json'  # 서비스 계정 JSON 파일 경로
-SCOPES = ['https://www.googleapis.com/auth/drive.file']
 
-# Google Drive API 클라이언트 서비스 객체 생성
-credentials = service_account.Credentials.from_service_account_file(
-    SERVICE_ACCOUNT_FILE, scopes=SCOPES)
-service = build('drive', 'v3', credentials=credentials)
+class cloud:
+    def __init__(self):    
+        # 서비스 계정 파일 경로
+        self.SERVICE_ACCOUNT_FILE = '/home/jetson/smart/safe-guide-manager-431512-9e05ded22b73.json'
 
-# Google Drive 폴더 ID 및 업로드할 파일 경로
-folder_id = 'your_folder_id'  # Google Drive 폴더 ID
-file_paths = 'file.csv'       # 업로드할 파일 경로
+        # 인증 및 API 클라이언트 생성
+        self.credentials = service_account.Credentials.from_service_account_file(
+            self.SERVICE_ACCOUNT_FILE,
+            scopes=['https://www.googleapis.com/auth/drive']
+        )
+        self.drive_service = build('drive', 'v3', credentials=self.credentials)
+        # 폴더 경로와 폴더 ID 설정
+        self.folder_path = '/home/jetson/smart/output'
+        self.folder_id = '15G8-Cqv3HraAmtLiaqU6HYmoG328COUm'
 
-# 파일 메타데이터 정의
-file_metadata = {
-    'name': 'file.csv',  # 업로드할 파일 이름
-    'parents': [folder_id]  # 업로드할 폴더 ID
-}
 
-# 파일 업로드를 위한 MediaFileUpload 객체 생성
-media = MediaFileUpload(file_paths, mimetype='text/csv')
-
-# 파일 업로드 요청
-try:
-    file_info = service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id, webViewLink'
-    ).execute()
-
-    # 업로드 성공 시 파일 링크 출력
-    print("File webViewLink:", file_info.get('webViewLink'))
-except Exception as e:
-    print(f"An error occurred: {e}")
-
+    def upload_to_drive(self):
+        # 폴더 내 모든 파일 경로 가져오기
+        file_paths = [os.path.join(self.folder_path, f) for f in os.listdir(self.folder_path) if f.lower().endswith(('png', 'jpg', 'jpeg', 'gif', 'bmp'))]
+    
+        for idx, file_path in enumerate(file_paths):
+            file_name = f'image_{idx+1}{os.path.splitext(file_path)[1]}'  # 인덱스를 올려가며 파일 이름 생성
+            file_metadata = {
+                'name': file_name,  # 업로드될 파일의 이름
+                'parents': [self.folder_id]  # 업로드될 폴더 ID
+            }
+            media = MediaFileUpload(file_path, mimetype='image/jpeg')
+        
+            file = self.drive_service.files().create(
+                body=file_metadata,
+                media_body=media,
+                fields='id'
+            ).execute()
+        
+            print(f"Uploaded {file_name} with File ID: {file.get('id')}")

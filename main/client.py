@@ -2,6 +2,7 @@ from flask import Flask, request
 import os,sys
 from werkzeug.utils import secure_filename
 from db_manage import ImageDatabase
+from drive import Cloud
 
 sys.path.append('/home/jetson/smart/Object_Detection')
 from object_detect import ObjectDetection
@@ -14,6 +15,7 @@ class FileReceiver:
         self.db = ImageDatabase()  # Create ImageDatabase
         self._set_routes() # Setting Flask Route
         self.detector=ObjectDetection() #Image detector
+        self.googledrive=Cloud()
 
     def _set_routes(self):
         @self.app.route('/receive', methods=['POST'])
@@ -36,6 +38,7 @@ class FileReceiver:
             
             self.db.save_image(image_bytes, status=0) # save images in DB
             self.detector.process_image(image_bytes) # detecting image
+            self.googledrive.upload_all_images()
             return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
