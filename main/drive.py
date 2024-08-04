@@ -4,7 +4,7 @@ from googleapiclient.http import MediaFileUpload
 import os
 
 
-class cloud:
+class Cloud:
     def __init__(self):    
         # 서비스 계정 파일 경로
         self.SERVICE_ACCOUNT_FILE = '/home/jetson/smart/safe-guide-manager-431512-9e05ded22b73.json'

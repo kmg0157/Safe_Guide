@@ -18,7 +18,7 @@ class ObjectDetection:
         self.track_classes = ['car', 'truck', 'van', 'forklift', 'fire', 'smoke']
         self.frame_check_threshold = 3                   # 이 프레임 당 비율 변화 체크
         self.fire_smoke_frame_check_threshold = 15       # 화재/연기 감지 프레임
-        self.alert_threshold = 0.1                       # 관심 단계로 지정되는 이미지 비율
+        self.alert_threshold = 0.05                       # 관심 단계로 지정되는 이미지 비율
         self.warning_ratio = 0.03                        # 경고 단계로 전환되는 이미지 비율의 증가량
         self.danger_ratio = 0.05                         # 위험 단계로 전환되는 이미지 비율의 증가량
 

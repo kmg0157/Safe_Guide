@@ -38,7 +38,7 @@ class FileReceiver:
             
             self.db.save_image(image_bytes, status=0) # save images in DB
             self.detector.process_image(image_bytes) # detecting image
-            self.googledrive.upload_all_images()
+            self.googledrive.upload_to_drive()
             return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
