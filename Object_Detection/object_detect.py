@@ -11,7 +11,7 @@ class ObjectDetection:
     def __init__(self):
 
         # YOLOv5 모델 로드
-        self.model = torch.hub.load('/home/jetson/smart/Object_Detection/yolov5', 'custom', path='Object_Detection/best_0.3.0.pt', source='local')
+        self.model = torch.hub.load('/home/jetson/smart/Object_Detection/yolov5', 'custom', path='Object_Detection/best_0.3.1.pt', source='local')
 
         # 추적 대상 클래스
         # 대상 클래스, 프레임 당 비율 변화, 화재/연기 감지 프레임, 관심/경고/위험 이미지 비율 모두 여기서 조정 가능
