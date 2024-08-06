@@ -1,7 +1,7 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-import os
+import os, time
 
 
 class Cloud:
@@ -24,18 +24,23 @@ class Cloud:
         # 폴더 내 모든 파일 경로 가져오기
         file_paths = [os.path.join(self.folder_path, f) for f in os.listdir(self.folder_path) if f.lower().endswith(('png', 'jpg', 'jpeg', 'gif', 'bmp'))]
     
-        for idx, file_path in enumerate(file_paths):
-            file_name = f'image_{idx+1}{os.path.splitext(file_path)[1]}'  # 인덱스를 올려가며 파일 이름 생성
+        for index, file_path in enumerate(file_paths):
+            # 파일 이름 생성
+            file_name = f'image_{time.time():.0f}_{index}{os.path.splitext(file_path)[1]}'
             file_metadata = {
                 'name': file_name,  # 업로드될 파일의 이름
                 'parents': [self.folder_id]  # 업로드될 폴더 ID
             }
             media = MediaFileUpload(file_path, mimetype='image/jpeg')
-        
-            file = self.drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-        
-            print(f"Uploaded {file_name} with File ID: {file.get('id')}")
+
+            try:
+                # 파일 업로드
+                file = self.drive_service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
+                
+                print(f"Uploaded {file_name} with File ID: {file.get('id')}")
+            except Exception as e:
+                print(f"Failed to upload {file_name}. Error: {str(e)}")
