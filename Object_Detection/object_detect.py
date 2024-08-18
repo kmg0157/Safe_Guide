@@ -3,9 +3,8 @@ import cv2
 import numpy as np
 import os,sys
 sys.path.append('/home/jetson/smart/main')
-#sys.path.append('/home/jetson/smart/send_to_led')
-from siren import Siren
-#from control_led import ControlLED
+sys.path.append('/home/jetson/smart/send_to_led')
+from control_led import ControlLED
 
 class ObjectDetection:
     def __init__(self):
@@ -16,17 +15,16 @@ class ObjectDetection:
         # 추적 대상 클래스
         # 대상 클래스, 프레임 당 비율 변화, 화재/연기 감지 프레임, 관심/경고/위험 이미지 비율 모두 여기서 조정 가능
         self.track_classes = ['car', 'truck', 'van', 'forklift', 'fire', 'smoke']
-        self.frame_check_threshold = 3                   # 이 프레임 당 비율 변화 체크
+        self.frame_check_threshold = 2                   # 이 프레임 당 비율 변화 체크
         self.fire_smoke_frame_check_threshold = 15       # 화재/연기 감지 프레임
-        self.alert_threshold = 0.05                       # 관심 단계로 지정되는 이미지 비율
-        self.warning_ratio = 0.03                        # 경고 단계로 전환되는 이미지 비율의 증가량
-        self.danger_ratio = 0.05                         # 위험 단계로 전환되는 이미지 비율의 증가량
+        self.alert_threshold = 0.01                       # 관심 단계로 지정되는 이미지 비율
+        self.warning_ratio = 0.01                        # 경고 단계로 전환되는 이미지 비율의 증가량
+        self.danger_ratio = 0.03                         # 위험 단계로 전환되는 이미지 비율의 증가량
 
 
         # 경고 상태 관리
         self.tracked_objects = {}
-        self.alert=Siren()
-        #self.cl=ControlLED()
+        self.cl=ControlLED()
 
 
     # 바운딩 박스를 그리는 함수
@@ -82,9 +80,6 @@ class ObjectDetection:
                         print(f"Processed image saved to {output_path}")
 
 
-    def moving_average(data,window_sise):
-        return np.convolve(data,np.ones(window_sise)/window_sise, mode='valid')
-
     # 객체의 상태를 기록 및 추적
     def track_object(self, class_name, area_ratio):
         if class_name not in self.tracked_objects:
@@ -98,31 +93,21 @@ class ObjectDetection:
         self.tracked_objects[class_name]['area_ratios'].append(area_ratio)
         self.tracked_objects[class_name]['frames_since_first_detection'] += 1
 
-        # 관심, 경고, 위험 수준 결정
-        if len(self.tracked_objects[class_name]['area_ratios']) >= self.frame_check_threshold:
-            recent_ratios = self.tracked_objects[class_name]['area_ratios'][-self.frame_check_threshold:]
-            smoothed_ratios = self.moving_average(recent_ratios, 3)  # 윈도우 크기 3으로 이동 평균 적용
-            ratio_change = smoothed_ratios[-1] - smoothed_ratios[0]
+        if self.tracked_objects[class_name]['alert_level'] == 'Caution':
+            if len(self.tracked_objects[class_name]['area_ratios']) >= self.frame_check_threshold:
+            # 최근 n개의 프레임에서의 비율 변화 체크
+                recent_ratios = self.tracked_objects[class_name]['area_ratios'][-self.frame_check_threshold:]
+                ratio_change = recent_ratios[-1] - recent_ratios[0]
+                #self.cl.request_off()
 
-            if self.tracked_objects[class_name]['alert_level'] == 'Caution':
                 if ratio_change >= self.warning_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = 'Warning'
-                    self.alert.warning_notice()
-                    #self.cl.request_on()
-                    print(f"[Warning] {class_name} detected with area ratio increase to {smoothed_ratios[-1]:.2f}")
-
+                    self.tracked_objects[class_name]['alert_level'] = '위험'
+                    self.cl.request_on()
+                    print(f"[위험] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
                 elif ratio_change >= self.danger_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = 'Danger'
-                    self.alert.danger_notice()
-                    #self.cl.request_on()
-                    print(f"[Danger] {class_name} detected with area ratio increase to {smoothed_ratios[-1]:.2f}")
-                
-                else:
-                    self.alert.default()
-                    #self.cl.request_off()
+                    self.tracked_objects[class_name]['alert_level'] = '경고'
+                    self.cl.request_on()
+                    print(f"[경고] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
 
-        if class_name in ['fire', 'smoke']:
-            if self.tracked_objects[class_name]['frames_since_first_detection'] > self.fire_smoke_frame_check_threshold:
-                self.alert.warning_notice()
-                print(f"[Caution] {class_name} detected for more than {self.fire_smoke_frame_check_threshold} frames")
-                    
+        else:
+            self.cl.request_off()
