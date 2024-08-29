@@ -1,10 +1,10 @@
+#sys.path.append('/home/jetson/smart/Object_Detection')
+
 from flask import Flask, request
-import os,sys
+import os
 from werkzeug.utils import secure_filename
 from db_manage import ImageDatabase
 from drive import Cloud
-
-sys.path.append('/home/jetson/smart/Object_Detection')
 from object_detect import ObjectDetection
 
 class FileReceiver:
@@ -12,8 +12,8 @@ class FileReceiver:
         self.app = Flask(__name__) #Initializing app
         self.RECEIVE_FOLDER = receive_folder
         os.makedirs(self.RECEIVE_FOLDER, exist_ok=True)
-        self.db = ImageDatabase()  # Create ImageDatabase
         self._set_routes() # Setting Flask Route
+        self.db = ImageDatabase()  # Create ImageDatabase
         self.detector=ObjectDetection() #Image detector
         self.googledrive=Cloud()
 
@@ -35,11 +35,10 @@ class FileReceiver:
             # read BLOB type
             with open(file_path, 'rb') as image_file:
                 image_bytes = image_file.read()
-            
-            self.db.save_image(image_bytes, status=0) # save images in DB
-            self.detector.process_image(image_bytes) # detecting image
-            self.googledrive.upload_to_drive()
-            return 'File received successfully', 200
+                self.db.save_image(image_bytes, status=0) # save images in DB
+                self.detector.process_image(image_bytes) # detecting image
+                self.googledrive.upload_to_drive()
+                return 'File received successfully', 200
 
     def run(self, host='0.0.0.0', port=5000):
         self.app.run(host=host, port=port, threaded=True)

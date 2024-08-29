@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "./send_to_led",
+        "./Object_Detection"
+    ]
+}

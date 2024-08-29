@@ -1,19 +1,18 @@
+#sys.path.append('/home/jetson/smart/send_to_led')
+
 import torch
 import cv2
 import numpy as np
-import os,sys
-sys.path.append('/home/jetson/smart/main')
-sys.path.append('/home/jetson/smart/send_to_led')
+import os
+from deep_sort_realtime.deepsort_tracker import DeepSort
 from control_led import ControlLED
 
 class ObjectDetection:
     def __init__(self):
-
         # YOLOv5 모델 로드
         self.model = torch.hub.load('/home/jetson/smart/Object_Detection/yolov5', 'custom', path='Object_Detection/best_0.3.1.pt', source='local')
 
         # 추적 대상 클래스
-        # 대상 클래스, 프레임 당 비율 변화, 화재/연기 감지 프레임, 관심/경고/위험 이미지 비율 모두 여기서 조정 가능
         self.track_classes = ['car', 'truck', 'van', 'forklift', 'fire', 'smoke']
         self.frame_check_threshold = 2                   # 이 프레임 당 비율 변화 체크
         self.fire_smoke_frame_check_threshold = 15       # 화재/연기 감지 프레임
@@ -21,11 +20,10 @@ class ObjectDetection:
         self.warning_ratio = 0.01                        # 경고 단계로 전환되는 이미지 비율의 증가량
         self.danger_ratio = 0.03                         # 위험 단계로 전환되는 이미지 비율의 증가량
 
-
         # 경고 상태 관리
+        self.deepsort=DeepSort(max_age=30,n_init=3, nms_max_overlap=1.0, max_cosine_distance=0.2, nn_budget=100)
         self.tracked_objects = {}
-        self.cl=ControlLED()
-
+        self.cl = ControlLED()
 
     # 바운딩 박스를 그리는 함수
     def plot_one_box(self, x, img, color=(128, 128, 128), label=None, line_thickness=3):
@@ -42,8 +40,7 @@ class ObjectDetection:
 
     # 이미지 처리
     def process_image(self, image_blob, conf_threshold=0.25):
-        # 이미지 로드 
-        # BLOB 데이터를 이미지로 디코딩
+        # 이미지 로드
         img_array = np.frombuffer(image_blob, np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         if img is None:
@@ -54,6 +51,17 @@ class ObjectDetection:
 
         # 모델 추론
         results = self.model(img)
+        detections=[]
+
+        for *xyxy,conf,cls in results.xyxy[0]:
+            if conf>conf_threshold:
+                class_name=self.model.names[int(cls)]
+                if class_name in self.track_classes:
+                    x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                    bbox_xywh=[x1,y1,x2-x1,y2-y1]
+                    detections.append((bbox_xywh,conf.item(),class_name))
+
+        tracks=self.deepsort.update_tracks(detections, frame=img)
 
         # 결과 처리 및 바운딩 박스 그리기
         for *xyxy, conf, cls in results.xyxy[0]:
@@ -70,7 +78,7 @@ class ObjectDetection:
 
                     # 객체 인식 메시지 출력
                     print(f"Detected: {class_name} with confidence {conf:.2f},"
-                        f" {class_name} ratio in image: {area_ratio:.2f}")
+                          f" {class_name} ratio in image: {area_ratio:.2f}")
 
                     # 관심 수준 이상 감지
                     if area_ratio >= self.alert_threshold:
@@ -78,7 +86,6 @@ class ObjectDetection:
                         output_path = os.path.join('/home/jetson/smart/output', 'processed_image.jpg')
                         cv2.imwrite(output_path, img)
                         print(f"Processed image saved to {output_path}")
-
 
     # 객체의 상태를 기록 및 추적
     def track_object(self, class_name, area_ratio):
@@ -89,25 +96,25 @@ class ObjectDetection:
                 'frames_since_first_detection': 0
             }
 
-        # 바운딩 박스 크기 비율 기록
         self.tracked_objects[class_name]['area_ratios'].append(area_ratio)
         self.tracked_objects[class_name]['frames_since_first_detection'] += 1
 
-        if self.tracked_objects[class_name]['alert_level'] == 'Caution':
-            if len(self.tracked_objects[class_name]['area_ratios']) >= self.frame_check_threshold:
-            # 최근 n개의 프레임에서의 비율 변화 체크
-                recent_ratios = self.tracked_objects[class_name]['area_ratios'][-self.frame_check_threshold:]
-                ratio_change = recent_ratios[-1] - recent_ratios[0]
-                #self.cl.request_off()
+        recent_ratios = self.tracked_objects[class_name]['area_ratios'][-self.frame_check_threshold:]
+        ratio_change = recent_ratios[-1] - recent_ratios[0] if len(recent_ratios) > 1 else 0
 
-                if ratio_change >= self.warning_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = '위험'
-                    self.cl.request_on()
-                    print(f"[위험] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
-                elif ratio_change >= self.danger_ratio:
-                    self.tracked_objects[class_name]['alert_level'] = '경고'
-                    self.cl.request_on()
-                    print(f"[경고] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+        current_alert_level = self.tracked_objects[class_name]['alert_level']
 
-        else:
-            self.cl.request_off()
+        if current_alert_level == 'Caution':
+            if ratio_change >= self.danger_ratio:
+                self.tracked_objects[class_name]['alert_level'] = 'Danger'
+                self.cl.request_on()  # LED 켜기
+                print(f"[Danger] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+            elif ratio_change >= self.warning_ratio:
+                self.tracked_objects[class_name]['alert_level'] = 'Warning'
+                self.cl.request_on()  # LED 켜기
+                print(f"[Warning] {class_name} detected with area ratio increase to {recent_ratios[-1]:.2f}")
+        elif current_alert_level in ['Warning', 'Danger']:
+            if ratio_change < self.warning_ratio:
+                self.tracked_objects[class_name]['alert_level'] = 'Caution'
+                self.cl.request_off()  # LED 끄기
+                print(f"[Caution] {class_name} detected with area ratio stabilized at {recent_ratios[-1]:.2f}")
