@@ -4,7 +4,7 @@ import torch
 import cv2
 import numpy as np
 import os
-from deep_sort_realtime.deepsort_tracker import DeepSort
+from deep_sort_realtime.deepsort_tracker import DeepSort # type: ignore
 from control_led import ControlLED
 
 class ObjectDetection:
@@ -15,10 +15,10 @@ class ObjectDetection:
         # 추적 대상 클래스
         self.track_classes = ['car', 'truck', 'van', 'forklift', 'fire', 'smoke']
         self.frame_check_threshold = 2                   # 이 프레임 당 비율 변화 체크
-        self.fire_smoke_frame_check_threshold = 15       # 화재/연기 감지 프레임
         self.alert_threshold = 0.01                       # 관심 단계로 지정되는 이미지 비율
         self.warning_ratio = 0.01                        # 경고 단계로 전환되는 이미지 비율의 증가량
         self.danger_ratio = 0.03                         # 위험 단계로 전환되는 이미지 비율의 증가량
+        self.conf_threshold=0.25
 
         # 경고 상태 관리
         self.deepsort=DeepSort(max_age=30,n_init=3, nms_max_overlap=1.0, max_cosine_distance=0.2, nn_budget=100)
@@ -39,7 +39,7 @@ class ObjectDetection:
                         [225, 255, 255], thickness=tf, lineType=cv2.LINE_AA)
 
     # 이미지 처리
-    def process_image(self, image_blob, conf_threshold=0.25):
+    def process_image(self, image_blob):
         # 이미지 로드
         img_array = np.frombuffer(image_blob, np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
@@ -54,7 +54,7 @@ class ObjectDetection:
         detections=[]
 
         for *xyxy,conf,cls in results.xyxy[0]:
-            if conf>conf_threshold:
+            if conf > self.conf_threshold:
                 class_name=self.model.names[int(cls)]
                 if class_name in self.track_classes:
                     x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
@@ -63,29 +63,32 @@ class ObjectDetection:
 
         tracks=self.deepsort.update_tracks(detections, frame=img)
 
-        # 결과 처리 및 바운딩 박스 그리기
-        for *xyxy, conf, cls in results.xyxy[0]:
-            if conf > conf_threshold:
-                class_name = self.model.names[int(cls)]
-                if class_name in self.track_classes:
-                    x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-                    box_area = (x2 - x1) * (y2 - y1)
-                    image_area = img_width * img_height
-                    area_ratio = box_area / image_area
+        for track in tracks:
+            if not track.is_confirmed():
+                continue
+            track_id=track.track_id
+            bbox=track.to_ltwh()
+            class_name=track.get_det_class()
+            x1,y1,w,h=bbox
+            x2,y2=x1+w,y1+h
+            label=f'{class_name} {track_id}'
+            self.plot_one_box([x1, y1, x2, y2], img, label=label, color=(255, 0, 0), line_thickness=2)
+            box_area = (x2 - x1) * (y2 - y1)
+            image_area = img_width * img_height
+            area_ratio = box_area / image_area
 
-                    label = f'{class_name} {conf:.2f}'
-                    self.plot_one_box((x1, y1, x2, y2), img, label=label, color=(255, 0, 0), line_thickness=2)
-
-                    # 객체 인식 메시지 출력
-                    print(f"Detected: {class_name} with confidence {conf:.2f},"
+            det_conf=track.get_det_conf()
+            if det_conf is not None:
+                 print(f"Detected: {class_name} with confidence {det_conf:.2f},"
                           f" {class_name} ratio in image: {area_ratio:.2f}")
+            else:
+                 print(f"No Detection")
 
-                    # 관심 수준 이상 감지
-                    if area_ratio >= self.alert_threshold:
-                        self.track_object(class_name, area_ratio)
-                        output_path = os.path.join('/home/jetson/smart/output', 'processed_image.jpg')
-                        cv2.imwrite(output_path, img)
-                        print(f"Processed image saved to {output_path}")
+            self.track_object(class_name, area_ratio)
+        output_path = os.path.join('/home/jetson/smart/output', 'processed_image.jpg')
+        cv2.imwrite(output_path, img)
+        print(f"Processed image saved to {output_path}")
+
 
     # 객체의 상태를 기록 및 추적
     def track_object(self, class_name, area_ratio):
@@ -95,6 +98,8 @@ class ObjectDetection:
                 'alert_level': 'Caution',
                 'frames_since_first_detection': 0
             }
+        else:
+            self.tracked_objects[class_name]['alert_level']='Caution'
 
         self.tracked_objects[class_name]['area_ratios'].append(area_ratio)
         self.tracked_objects[class_name]['frames_since_first_detection'] += 1
