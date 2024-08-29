@@ -1,10 +1,10 @@
-#sys.path.append('/home/jetson/smart/Object_Detection')
-
 from flask import Flask, request
-import os
+import os, sys
 from werkzeug.utils import secure_filename
 from db_manage import ImageDatabase
 from drive import Cloud
+sys.path.append('/home/jetson/smart/Object_Detection')
+
 from object_detect import ObjectDetection
 
 class FileReceiver:

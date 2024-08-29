@@ -1,10 +1,9 @@
-#sys.path.append('/home/jetson/smart/send_to_led')
-
 import torch
 import cv2
 import numpy as np
-import os
+import os,sys
 from deep_sort_realtime.deepsort_tracker import DeepSort # type: ignore
+sys.path.append('/home/jetson/smart/send_to_led')
 from control_led import ControlLED
 
 class ObjectDetection:
